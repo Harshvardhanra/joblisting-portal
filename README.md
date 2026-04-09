@@ -1,4 +1,4 @@
-<img width="1897" height="912" alt="Screenshot 2026-02-24 130551" src="file:///C:/Users/harsh/OneDrive/Desktop/jobportal/index.html"/>
+
 🚀 TalentBridge - Job Seeker & Employer 
 PortalTalentBridge is a modern, full-featured job portal designed to connect talented professionals with top employers. The platform provides a seamless experience for browsing opportunities, tracking applications, and managing recruitment pipelines.
 ✨ Key Features
