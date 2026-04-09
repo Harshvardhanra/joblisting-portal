@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalentBridge – Manage Jobs</title>
+<link rel="stylesheet" href="../css/shared.css">
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h2>Talent<span>Bridge</span></h2><p>Employer Portal</p></div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sb-avatar">E</div>
+      <div class="user-info"><p id="sb-name">Employer</p><span id="sb-role">Employer</span></div>
+    </div>
+    <div class="sidebar-nav">
+      <a class="nav-item" href="employer-dashboard.html"><span class="icon">🏠</span> Dashboard</a>
+      <a class="nav-item active" href="manage-jobs.html"><span class="icon">💼</span> Manage Jobs</a>
+      <a class="nav-item" href="view-applications.html"><span class="icon">👥</span> Applications</a>
+      <a class="nav-item" href="employer-profile.html"><span class="icon">🏢</span> Company Profile</a>
+    </div>
+    <div class="sidebar-footer"><button class="logout-btn" onclick="logout()">🚪 Sign Out</button></div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Manage Jobs</h1>
+      <button class="btn btn-primary" onclick="openCreate()">+ Post New Job</button>
+    </div>
+    <div class="content">
+      <div id="jobs-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE/EDIT MODAL -->
+<div class="modal-overlay" id="job-modal">
+  <div class="modal" style="max-width:660px">
+    <div class="modal-header">
+      <h2 id="modal-title">Post a New Job</h2>
+      <button class="modal-close" onclick="closeModal('job-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Job Title *</label><input type="text" id="j-title" placeholder="e.g. Frontend Developer"></div>
+      <div class="form-group"><label>Company Name *</label><input type="text" id="j-company" placeholder="Your company"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Location *</label><input type="text" id="j-location" placeholder="City / Remote"></div>
+      <div class="form-group"><label>Job Type</label>
+        <select id="j-type">
+          <option>Full-time</option><option>Part-time</option>
+          <option>Remote</option><option>Contract</option><option>Internship</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Salary Range</label><input type="text" id="j-salary" placeholder="e.g. ₹8-12 LPA"></div>
+    </div>
+    <div class="form-group"><label>Job Description *</label><textarea id="j-desc" rows="3" placeholder="Describe the role and company..."></textarea></div>
+    <div class="form-group"><label>Qualifications</label><textarea id="j-qual" rows="2" placeholder="Education, years of experience, certifications..."></textarea></div>
+    <div class="form-group"><label>Responsibilities</label><textarea id="j-resp" rows="2" placeholder="Day-to-day tasks and duties..."></textarea></div>
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveJob()">💾 Save Job</button>
+      <button class="btn btn-outline" onclick="closeModal('job-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="modal-overlay" id="del-modal">
+  <div class="modal" style="max-width:420px;text-align:center">
+    <div style="font-size:3rem;margin-bottom:16px">🗑️</div>
+    <h2 style="font-family:'Playfair Display',serif;color:var(--navy);margin-bottom:10px">Delete Job?</h2>
+    <p style="color:var(--muted);margin-bottom:24px">This will permanently remove the job listing and all its applications.</p>
+    <div style="display:flex;gap:12px">
+      <button class="btn btn-danger" style="flex:1" onclick="confirmDelete()">Yes, Delete</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal('del-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="global-toast"></div>
+<script src="../js/app.js"></script>
+<script>
+  const user = requireAuth('employer');
+  renderSidebarUser();
+  let editId = null, deleteId = null;
+
+  function render(){
+    const jobs = getJobs().filter(j=>j.postedBy===user.email);
+    const cont = document.getElementById('jobs-list');
+    if(!jobs.length){ cont.innerHTML='<div class="empty"><div class="icon">📭</div><p>No jobs posted yet. Post your first job!</p></div>'; return; }
+    cont.innerHTML = jobs.reverse().map(job=>`
+      <div class="job-card" style="cursor:default">
+        <div class="job-logo">💼</div>
+        <div class="job-info">
+          <div class="job-title">${job.title}</div>
+          <div class="job-company">${job.company}</div>
+          <div class="job-tags">
+            <span class="tag tag-loc">📍 ${job.location}</span>
+            <span class="tag tag-type">${job.type}</span>
+            <span class="tag tag-salary">💰 ${job.salary}</span>
+          </div>
+          <p style="font-size:0.82rem;color:var(--muted);margin-top:6px">Posted: ${fmtDate(job.createdAt)} • <strong>${job.applications.length}</strong> applicants</p>
+        </div>
+        <div class="job-actions">
+          <button class="btn btn-outline btn-sm" onclick="openEdit(${job.id})">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="openDelete(${job.id})">🗑️ Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openCreate(){
+    editId=null;
+    document.getElementById('modal-title').textContent='Post a New Job';
+    ['j-title','j-company','j-location','j-salary','j-desc','j-qual','j-resp'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('j-company').value = user.company||'';
+    openModal('job-modal');
+  }
+
+  function openEdit(id){
+    editId=id;
+    const job=getJobById(id); if(!job) return;
+    document.getElementById('modal-title').textContent='Edit Job';
+    document.getElementById('j-title').value=job.title;
+    document.getElementById('j-company').value=job.company;
+    document.getElementById('j-location').value=job.location;
+    document.getElementById('j-type').value=job.type;
+    document.getElementById('j-salary').value=job.salary;
+    document.getElementById('j-desc').value=job.description;
+    document.getElementById('j-qual').value=job.qualifications;
+    document.getElementById('j-resp').value=job.responsibilities;
+    openModal('job-modal');
+  }
+
+  function saveJob(){
+    const title=document.getElementById('j-title').value.trim();
+    const company=document.getElementById('j-company').value.trim();
+    const location=document.getElementById('j-location').value.trim();
+    const desc=document.getElementById('j-desc').value.trim();
+    if(!title||!company||!location||!desc){ showToast('Please fill required fields','error'); return; }
+    const jobs=getJobs();
+    const data={
+      title, company, location,
+      type:document.getElementById('j-type').value,
+      salary:document.getElementById('j-salary').value.trim()||'Negotiable',
+      description:desc,
+      qualifications:document.getElementById('j-qual').value.trim(),
+      responsibilities:document.getElementById('j-resp').value.trim(),
+    };
+    if(editId){
+      const idx=jobs.findIndex(j=>j.id===editId);
+      if(idx>-1){ jobs[idx]={...jobs[idx],...data}; }
+    } else {
+      const newId=jobs.length?Math.max(...jobs.map(j=>j.id))+1:1;
+      jobs.push({id:newId, ...data, postedBy:user.email, applications:[], createdAt:new Date().toISOString()});
+    }
+    saveJobs(jobs);
+    closeModal('job-modal');
+    showToast(editId?'Job updated!':'Job posted successfully!');
+    render();
+  }
+
+  function openDelete(id){ deleteId=id; openModal('del-modal'); }
+  function confirmDelete(){
+    const jobs=getJobs().filter(j=>j.id!==deleteId);
+    saveJobs(jobs);
+    closeModal('del-modal');
+    showToast('Job deleted');
+    render();
+  }
+
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalentBridge – My Profile</title>
+<link rel="stylesheet" href="../css/shared.css">
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h2>Talent<span>Bridge</span></h2><p>Job Seeker Portal</p></div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sb-avatar">A</div>
+      <div class="user-info"><p id="sb-name">User</p><span id="sb-role">Job Seeker</span></div>
+    </div>
+    <div class="sidebar-nav">
+      <a class="nav-item" href="seeker-dashboard.html"><span class="icon">🏠</span> Dashboard</a>
+      <a class="nav-item" href="job-search.html"><span class="icon">🔍</span> Browse Jobs</a>
+      <a class="nav-item" href="my-applications.html"><span class="icon">📋</span> My Applications</a>
+      <a class="nav-item active" href="seeker-profile.html"><span class="icon">👤</span> My Profile</a>
+    </div>
+    <div class="sidebar-footer"><button class="logout-btn" onclick="logout()">🚪 Sign Out</button></div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar"><h1>My Profile</h1></div>
+    <div class="content">
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:start">
+        <!-- Profile Card -->
+        <div class="card" style="text-align:center">
+          <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--navy);margin:0 auto 16px" id="big-avatar">A</div>
+          <h2 id="pf-name" style="font-family:'Playfair Display',serif;color:var(--navy);margin-bottom:4px"></h2>
+          <p id="pf-email" style="color:var(--muted);font-size:0.85rem;margin-bottom:12px"></p>
+          <div id="pf-tags" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>
+          <div style="background:#f8fafc;border-radius:10px;padding:14px;text-align:left;font-size:0.87rem">
+            <p><strong>📍</strong> <span id="pf-loc">Not set</span></p>
+            <p style="margin-top:6px"><strong>📞</strong> <span id="pf-phone">Not set</span></p>
+          </div>
+          <div id="pf-bio" style="margin-top:14px;font-size:0.87rem;color:var(--muted);line-height:1.6;text-align:left"></div>
+        </div>
+
+        <!-- Edit Form -->
+        <div class="card">
+          <div class="section-header"><h2>Edit Profile</h2></div>
+          <div class="form-row">
+            <div class="form-group"><label>Full Name</label><input type="text" id="f-name"></div>
+            <div class="form-group"><label>Phone</label><input type="tel" id="f-phone" placeholder="+91 ..."></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Location</label><input type="text" id="f-location" placeholder="City, State"></div>
+            <div class="form-group"><label>Resume / Portfolio URL</label><input type="url" id="f-resume" placeholder="https://..."></div>
+          </div>
+          <div class="form-group"><label>Skills (comma separated)</label><input type="text" id="f-skills" placeholder="React, Node.js, Python..."></div>
+          <div class="form-group"><label>Bio</label><textarea id="f-bio" rows="4" placeholder="Tell employers about yourself..."></textarea></div>
+          <hr style="margin:20px 0;border-color:var(--border)">
+          <div class="section-header" style="margin-bottom:16px"><h2>Change Password</h2></div>
+          <div class="form-row">
+            <div class="form-group"><label>New Password</label><input type="password" id="f-newpass" placeholder="Min 6 characters"></div>
+            <div class="form-group"><label>Confirm Password</label><input type="password" id="f-confpass" placeholder="Repeat password"></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveProfile()">💾 Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="global-toast"></div>
+<script src="../js/app.js"></script>
+<script>
+  let user = requireAuth('seeker');
+  renderSidebarUser();
+
+  function loadProfile(){
+    user = getCurrentUser();
+    document.getElementById('big-avatar').textContent = user.name.charAt(0).toUpperCase();
+    document.getElementById('pf-name').textContent = user.name;
+    document.getElementById('pf-email').textContent = user.email;
+    document.getElementById('pf-loc').textContent = user.location || 'Not set';
+    document.getElementById('pf-phone').textContent = user.phone || 'Not set';
+    document.getElementById('pf-bio').textContent = user.bio || '';
+    // Skills tags
+    const skills = (user.skills||'').split(',').map(s=>s.trim()).filter(Boolean);
+    document.getElementById('pf-tags').innerHTML = skills.map(s=>`<span class="tag tag-type">${s}</span>`).join('');
+    // Fill form
+    document.getElementById('f-name').value = user.name||'';
+    document.getElementById('f-phone').value = user.phone||'';
+    document.getElementById('f-location').value = user.location||'';
+    document.getElementById('f-resume').value = user.resume||'';
+    document.getElementById('f-skills').value = user.skills||'';
+    document.getElementById('f-bio').value = user.bio||'';
+  }
+
+  function saveProfile(){
+    const np = document.getElementById('f-newpass').value;
+    const cp = document.getElementById('f-confpass').value;
+    if(np && np !== cp){ showToast('Passwords do not match','error'); return; }
+    if(np && np.length < 6){ showToast('Password too short','error'); return; }
+
+    const updated = {
+      ...user,
+      name: document.getElementById('f-name').value.trim(),
+      phone: document.getElementById('f-phone').value.trim(),
+      location: document.getElementById('f-location').value.trim(),
+      resume: document.getElementById('f-resume').value.trim(),
+      skills: document.getElementById('f-skills').value.trim(),
+      bio: document.getElementById('f-bio').value.trim(),
+    };
+    if(np) updated.password = np;
+    updateCurrentUser(updated);
+    user = getCurrentUser();
+    renderSidebarUser();
+    loadProfile();
+    showToast('Profile updated!');
+    document.getElementById('f-newpass').value='';
+    document.getElementById('f-confpass').value='';
+  }
+
+  loadProfile();
+</script>
+</body>
+</html>

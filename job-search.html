@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalentBridge – Browse Jobs</title>
+<link rel="stylesheet" href="../css/shared.css">
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h2>Talent<span>Bridge</span></h2><p>Job Seeker Portal</p></div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sb-avatar">A</div>
+      <div class="user-info"><p id="sb-name">User</p><span id="sb-role">Job Seeker</span></div>
+    </div>
+    <div class="sidebar-nav">
+      <a class="nav-item" href="seeker-dashboard.html"><span class="icon">🏠</span> Dashboard</a>
+      <a class="nav-item active" href="job-search.html"><span class="icon">🔍</span> Browse Jobs</a>
+      <a class="nav-item" href="my-applications.html"><span class="icon">📋</span> My Applications</a>
+      <a class="nav-item" href="seeker-profile.html"><span class="icon">👤</span> My Profile</a>
+    </div>
+    <div class="sidebar-footer"><button class="logout-btn" onclick="logout()">🚪 Sign Out</button></div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Browse Jobs</h1>
+      <span id="job-count" style="color:var(--muted);font-size:0.9rem"></span>
+    </div>
+    <div class="content">
+      <!-- SEARCH BAR -->
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="kw" placeholder="Search by title, company..." oninput="filterJobs()">
+        <select id="loc-filter" onchange="filterJobs()">
+          <option value="">All Locations</option>
+        </select>
+        <select id="type-filter" onchange="filterJobs()">
+          <option value="">All Types</option>
+          <option>Full-time</option>
+          <option>Part-time</option>
+          <option>Remote</option>
+          <option>Internship</option>
+          <option>Contract</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="clearFilters()">Clear</button>
+      </div>
+
+      <div id="job-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APPLY MODAL -->
+<div class="modal-overlay" id="apply-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Apply for <span id="modal-job-title">Job</span></h2>
+      <button class="modal-close" onclick="closeModal('apply-modal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Cover Letter</label>
+      <textarea id="cover-letter" rows="5" placeholder="Write a brief cover letter explaining why you're a great fit..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Resume / Portfolio Link (optional)</label>
+      <input type="url" id="resume-link" placeholder="https://your-resume.com">
+    </div>
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitApplication()">Submit Application →</button>
+      <button class="btn btn-outline" onclick="closeModal('apply-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOB DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="d-title">Job Title</h2>
+      <button class="modal-close" onclick="closeModal('detail-modal')">✕</button>
+    </div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="global-toast"></div>
+
+<script src="../js/app.js"></script>
+<script>
+  const user = requireAuth('seeker');
+  renderSidebarUser();
+
+  let selectedJobId = null;
+
+  function renderJobs(){
+    const jobs = getJobs();
+    // Populate location filter
+    const locs = [...new Set(jobs.map(j=>j.location))];
+    const locSel = document.getElementById('loc-filter');
+    if(locSel.options.length <= 1){
+      locs.forEach(l=>{ const o=document.createElement('option'); o.value=l; o.textContent=l; locSel.appendChild(o); });
+    }
+    filterJobs();
+  }
+
+  function filterJobs(){
+    const kw = document.getElementById('kw').value.toLowerCase();
+    const loc = document.getElementById('loc-filter').value;
+    const type = document.getElementById('type-filter').value;
+    const jobs = getJobs().filter(j=>{
+      const matchKw = !kw || j.title.toLowerCase().includes(kw) || j.company.toLowerCase().includes(kw) || j.description.toLowerCase().includes(kw);
+      const matchLoc = !loc || j.location === loc;
+      const matchType = !type || j.type === type;
+      return matchKw && matchLoc && matchType;
+    });
+    document.getElementById('job-count').textContent = jobs.length + ' jobs found';
+    const cont = document.getElementById('job-list');
+    if(!jobs.length){ cont.innerHTML='<div class="empty"><div class="icon">🔭</div><p>No jobs match your search</p></div>'; return; }
+    cont.innerHTML = jobs.map(job=>{
+      const applied = job.applications.some(a=>a.email===user.email);
+      return `<div class="job-card">
+        <div class="job-logo" style="cursor:pointer" onclick="showDetail(${job.id})">💼</div>
+        <div class="job-info" onclick="showDetail(${job.id})" style="flex:1">
+          <div class="job-title">${job.title}</div>
+          <div class="job-company">${job.company}</div>
+          <div class="job-tags">
+            <span class="tag tag-loc">📍 ${job.location}</span>
+            <span class="tag tag-type">${job.type}</span>
+            <span class="tag tag-salary">💰 ${job.salary}</span>
+          </div>
+          <p style="font-size:0.85rem;color:var(--muted);margin-top:8px">${job.description.substring(0,100)}...</p>
+        </div>
+        <div class="job-actions">
+          <span style="font-size:0.78rem;color:var(--muted)">${fmtDate(job.createdAt)}</span>
+          ${applied
+            ? '<span class="badge badge-accepted">✓ Applied</span>'
+            : `<button class="btn btn-primary btn-sm" onclick="openApply(${job.id}, '${job.title.replace(/'/g,"\\'")}')">Apply Now</button>`}
+          <button class="btn btn-outline btn-sm" onclick="showDetail(${job.id})">Details</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function clearFilters(){
+    document.getElementById('kw').value='';
+    document.getElementById('loc-filter').value='';
+    document.getElementById('type-filter').value='';
+    filterJobs();
+  }
+
+  function openApply(id, title){
+    selectedJobId = id;
+    document.getElementById('modal-job-title').textContent = title;
+    document.getElementById('cover-letter').value='';
+    document.getElementById('resume-link').value='';
+    openModal('apply-modal');
+  }
+
+  function submitApplication(){
+    const cover = document.getElementById('cover-letter').value.trim();
+    const resume = document.getElementById('resume-link').value.trim();
+    if(!cover){ showToast('Please write a cover letter','error'); return; }
+    const jobs = getJobs();
+    const job = jobs.find(j=>j.id===selectedJobId);
+    if(!job) return;
+    if(job.applications.some(a=>a.email===user.email)){ showToast('Already applied','error'); closeModal('apply-modal'); return; }
+    job.applications.push({
+      email: user.email, name: user.name, coverLetter: cover,
+      resume: resume, status: 'pending', appliedAt: new Date().toISOString()
+    });
+    saveJobs(jobs);
+    closeModal('apply-modal');
+    showToast('Application submitted successfully!');
+    filterJobs();
+  }
+
+  function showDetail(id){
+    const job = getJobById(id);
+    if(!job) return;
+    document.getElementById('d-title').textContent = job.title;
+    document.getElementById('detail-body').innerHTML = `
+      <div style="margin-bottom:16px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <span class="tag tag-loc">📍 ${job.location}</span>
+          <span class="tag tag-type">${job.type}</span>
+          <span class="tag tag-salary">💰 ${job.salary}</span>
+        </div>
+        <p style="font-size:0.85rem;color:var(--muted)">Posted by ${job.company} • ${fmtDate(job.createdAt)}</p>
+      </div>
+      <div class="form-group"><label>Description</label><p style="color:var(--text);line-height:1.7">${job.description}</p></div>
+      <div class="form-group"><label>Qualifications</label><p style="color:var(--text);line-height:1.7">${job.qualifications}</p></div>
+      <div class="form-group"><label>Responsibilities</label><p style="color:var(--text);line-height:1.7">${job.responsibilities}</p></div>
+      ${job.applications.some(a=>a.email===user.email)
+        ? '<div class="badge badge-accepted" style="display:inline-block;padding:10px 16px;font-size:0.9rem">✓ You have applied</div>'
+        : `<button class="btn btn-primary" style="width:100%" onclick="closeModal('detail-modal');openApply(${job.id},'${job.title.replace(/'/g,"\\'")}')">Apply for this Job →</button>`
+      }
+    `;
+    openModal('detail-modal');
+  }
+
+  renderJobs();
+</script>
+</body>
+</html>

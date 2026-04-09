@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalentBridge – Company Profile</title>
+<link rel="stylesheet" href="../css/shared.css">
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h2>Talent<span>Bridge</span></h2><p>Employer Portal</p></div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sb-avatar">E</div>
+      <div class="user-info"><p id="sb-name">Employer</p><span id="sb-role">Employer</span></div>
+    </div>
+    <div class="sidebar-nav">
+      <a class="nav-item" href="employer-dashboard.html"><span class="icon">🏠</span> Dashboard</a>
+      <a class="nav-item" href="manage-jobs.html"><span class="icon">💼</span> Manage Jobs</a>
+      <a class="nav-item" href="view-applications.html"><span class="icon">👥</span> Applications</a>
+      <a class="nav-item active" href="employer-profile.html"><span class="icon">🏢</span> Company Profile</a>
+    </div>
+    <div class="sidebar-footer"><button class="logout-btn" onclick="logout()">🚪 Sign Out</button></div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar"><h1>Company Profile</h1></div>
+    <div class="content">
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:start">
+        <!-- Preview Card -->
+        <div class="card" style="text-align:center">
+          <div style="width:80px;height:80px;border-radius:16px;background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 16px">🏢</div>
+          <h2 id="pf-company" style="font-family:'Playfair Display',serif;color:var(--navy);margin-bottom:4px">Company</h2>
+          <p id="pf-email" style="color:var(--muted);font-size:0.85rem;margin-bottom:8px"></p>
+          <p id="pf-website" style="font-size:0.85rem;margin-bottom:12px"></p>
+          <div style="background:#f8fafc;border-radius:10px;padding:14px;text-align:left;font-size:0.87rem">
+            <p><strong>👤</strong> <span id="pf-name">HR Contact</span></p>
+            <p style="margin-top:6px"><strong>📞</strong> <span id="pf-phone">Not set</span></p>
+          </div>
+          <div id="pf-desc" style="margin-top:14px;font-size:0.87rem;color:var(--muted);line-height:1.6;text-align:left"></div>
+        </div>
+
+        <!-- Edit Form -->
+        <div class="card">
+          <div class="section-header"><h2>Edit Company Details</h2></div>
+          <div class="form-row">
+            <div class="form-group"><label>Contact Name</label><input type="text" id="f-name"></div>
+            <div class="form-group"><label>Phone</label><input type="tel" id="f-phone" placeholder="+91 ..."></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Company Name</label><input type="text" id="f-company" placeholder="Your company name"></div>
+            <div class="form-group"><label>Website</label><input type="url" id="f-website" placeholder="https://company.com"></div>
+          </div>
+          <div class="form-group"><label>Company Description</label><textarea id="f-desc" rows="4" placeholder="Tell job seekers about your company, culture, mission..."></textarea></div>
+          <hr style="margin:20px 0;border-color:var(--border)">
+          <div class="section-header" style="margin-bottom:16px"><h2>Change Password</h2></div>
+          <div class="form-row">
+            <div class="form-group"><label>New Password</label><input type="password" id="f-newpass" placeholder="Min 6 characters"></div>
+            <div class="form-group"><label>Confirm Password</label><input type="password" id="f-confpass" placeholder="Repeat password"></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveProfile()">💾 Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="global-toast"></div>
+<script src="../js/app.js"></script>
+<script>
+  let user = requireAuth('employer');
+  renderSidebarUser();
+
+  function loadProfile(){
+    user = getCurrentUser();
+    document.getElementById('pf-company').textContent = user.company||'Your Company';
+    document.getElementById('pf-name').textContent = user.name||'';
+    document.getElementById('pf-email').textContent = user.email;
+    document.getElementById('pf-phone').textContent = user.phone||'Not set';
+    document.getElementById('pf-website').innerHTML = user.website ? `<a href="${user.website}" target="_blank" style="color:var(--gold)">${user.website}</a>` : '';
+    document.getElementById('pf-desc').textContent = user.companyDesc||'';
+    document.getElementById('f-name').value = user.name||'';
+    document.getElementById('f-phone').value = user.phone||'';
+    document.getElementById('f-company').value = user.company||'';
+    document.getElementById('f-website').value = user.website||'';
+    document.getElementById('f-desc').value = user.companyDesc||'';
+  }
+
+  function saveProfile(){
+    const np=document.getElementById('f-newpass').value;
+    const cp=document.getElementById('f-confpass').value;
+    if(np && np!==cp){ showToast('Passwords do not match','error'); return; }
+    if(np && np.length<6){ showToast('Password too short','error'); return; }
+    const updated={
+      ...user,
+      name:document.getElementById('f-name').value.trim(),
+      phone:document.getElementById('f-phone').value.trim(),
+      company:document.getElementById('f-company').value.trim(),
+      website:document.getElementById('f-website').value.trim(),
+      companyDesc:document.getElementById('f-desc').value.trim(),
+    };
+    if(np) updated.password=np;
+    updateCurrentUser(updated);
+    user=getCurrentUser();
+    renderSidebarUser();
+    loadProfile();
+    showToast('Profile updated!');
+    document.getElementById('f-newpass').value='';
+    document.getElementById('f-confpass').value='';
+  }
+
+  loadProfile();
+</script>
+</body>
+</html>

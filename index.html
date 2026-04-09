@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalentBridge – Find Your Next Opportunity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0d1b2a;
+    --navy2: #1b2d42;
+    --gold: #e8a045;
+    --gold2: #f5c07a;
+    --cream: #faf6f0;
+    --text: #2c3e50;
+    --muted: #6b7a8d;
+    --white: #ffffff;
+    --error: #e74c3c;
+    --success: #27ae60;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+  /* HERO */
+  .hero {
+    min-height:100vh;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 60%, #243b55 100%);
+    display:flex; align-items:center; justify-content:center;
+    position:relative; overflow:hidden;
+  }
+  .hero::before {
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(232,160,69,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(232,160,69,0.08) 0%, transparent 50%);
+  }
+  .hero-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:80px;
+    max-width:1100px; width:100%; padding:40px 30px; align-items:center; position:relative; z-index:1;
+  }
+  .hero-left h1 {
+    font-family:'Playfair Display',serif;
+    font-size:clamp(2.5rem,5vw,4rem); color:var(--white);
+    line-height:1.1; margin-bottom:20px;
+  }
+  .hero-left h1 span { color:var(--gold); }
+  .hero-left p { color:#aabcd0; font-size:1.1rem; line-height:1.7; margin-bottom:32px; }
+  .stats { display:flex; gap:32px; }
+  .stat { text-align:center; }
+  .stat-num { font-family:'Playfair Display',serif; font-size:2rem; color:var(--gold); font-weight:700; }
+  .stat-label { color:#aabcd0; font-size:0.8rem; letter-spacing:1px; text-transform:uppercase; }
+
+  /* AUTH CARD */
+  .auth-card {
+    background:var(--white); border-radius:20px;
+    padding:40px; box-shadow:0 40px 80px rgba(0,0,0,0.4);
+    animation: slideUp 0.7s ease;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+  .tab-row { display:flex; gap:0; margin-bottom:32px; background:#f0f4f8; border-radius:10px; padding:4px; }
+  .tab-btn {
+    flex:1; padding:10px; border:none; background:transparent; border-radius:8px;
+    font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:500; cursor:pointer;
+    color:var(--muted); transition:all 0.3s;
+  }
+  .tab-btn.active { background:var(--navy); color:var(--white); }
+  .auth-form { display:none; }
+  .auth-form.active { display:block; }
+  .form-group { margin-bottom:18px; }
+  .form-group label { display:block; font-size:0.85rem; font-weight:600; color:var(--text); margin-bottom:6px; letter-spacing:0.3px; }
+  .form-group input, .form-group select {
+    width:100%; padding:12px 16px; border:2px solid #e8ecf0; border-radius:10px;
+    font-family:'DM Sans',sans-serif; font-size:0.95rem; color:var(--text);
+    transition:border-color 0.3s; outline:none; background:var(--white);
+  }
+  .form-group input:focus, .form-group select:focus { border-color:var(--gold); }
+  .role-select { display:flex; gap:10px; margin-bottom:18px; }
+  .role-opt { flex:1; }
+  .role-opt input[type=radio] { display:none; }
+  .role-opt label {
+    display:block; padding:10px; text-align:center; border:2px solid #e8ecf0;
+    border-radius:10px; cursor:pointer; font-size:0.9rem; transition:all 0.3s;
+  }
+  .role-opt input:checked + label { border-color:var(--gold); background:#fff8ee; color:var(--navy); font-weight:600; }
+  .btn-primary {
+    width:100%; padding:14px; background:linear-gradient(135deg,var(--gold),var(--gold2));
+    color:var(--navy); font-family:'DM Sans',sans-serif; font-size:1rem; font-weight:700;
+    border:none; border-radius:10px; cursor:pointer; transition:all 0.3s;
+    letter-spacing:0.5px;
+  }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(232,160,69,0.4); }
+  .msg { font-size:0.85rem; text-align:center; margin-top:12px; height:18px; }
+  .msg.error { color:var(--error); }
+  .msg.success { color:var(--success); }
+
+  /* FLOATING SHAPES */
+  .shape {
+    position:absolute; border-radius:50%; opacity:0.05;
+    animation: float 8s ease-in-out infinite;
+  }
+  .shape1 { width:300px; height:300px; background:var(--gold); top:-100px; right:-100px; animation-delay:0s; }
+  .shape2 { width:200px; height:200px; background:var(--gold); bottom:50px; left:-80px; animation-delay:3s; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
+
+  @media(max-width:768px){
+    .hero-grid { grid-template-columns:1fr; gap:40px; }
+    .hero-left { text-align:center; }
+    .stats { justify-content:center; }
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="shape shape1"></div>
+  <div class="shape shape2"></div>
+  <div class="hero-grid">
+    <div class="hero-left">
+      <h1>Find Your <span>Dream Job</span> Today</h1>
+      <p>Connect with top employers and discover thousands of opportunities across every industry. Your next career move starts here.</p>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">12K+</div><div class="stat-label">Jobs Posted</div></div>
+        <div class="stat"><div class="stat-num">4K+</div><div class="stat-label">Companies</div></div>
+        <div class="stat"><div class="stat-num">98%</div><div class="stat-label">Success Rate</div></div>
+      </div>
+    </div>
+    <div class="auth-card">
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+        <button class="tab-btn" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="auth-form active" id="login-form">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="login-email" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-pass" placeholder="••••••••">
+        </div>
+        <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+        <div class="msg" id="login-msg"></div>
+        <p style="text-align:center;margin-top:16px;font-size:0.85rem;color:var(--muted)">
+          Demo: seeker@demo.com / employer@demo.com | pass: 123456
+        </p>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="auth-form" id="register-form">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="reg-name" placeholder="John Doe">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="reg-email" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="reg-pass" placeholder="Min 6 characters">
+        </div>
+        <div class="form-group"><label>I am a:</label></div>
+        <div class="role-select">
+          <div class="role-opt">
+            <input type="radio" name="role" id="r-seeker" value="seeker" checked>
+            <label for="r-seeker">🔍 Job Seeker</label>
+          </div>
+          <div class="role-opt">
+            <input type="radio" name="role" id="r-employer" value="employer">
+            <label for="r-employer">🏢 Employer</label>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="doRegister()">Create Account →</button>
+        <div class="msg" id="reg-msg"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Seed demo users
+  if(!localStorage.getItem('tb_users')){
+    const demo=[
+      {name:'Alex Johnson',email:'seeker@demo.com',password:'123456',role:'seeker',
+       resume:'',phone:'',location:'',skills:'',bio:''},
+      {name:'TechCorp HR',email:'employer@demo.com',password:'123456',role:'employer',
+       company:'TechCorp',companyDesc:'Leading tech company',website:'techcorp.com',phone:''}
+    ];
+    localStorage.setItem('tb_users',JSON.stringify(demo));
+  }
+  if(!localStorage.getItem('tb_jobs')){
+    const jobs=[
+      {id:1,title:'Frontend Developer',company:'TechCorp',location:'Mumbai',type:'Full-time',salary:'₹8-12 LPA',description:'Build modern web applications using React and Vue.',qualifications:'B.Tech CS or equivalent',responsibilities:'Develop UI components, optimize performance',postedBy:'employer@demo.com',applications:[],createdAt:new Date().toISOString()},
+      {id:2,title:'UI/UX Designer',company:'DesignHub',location:'Bangalore',type:'Remote',salary:'₹6-10 LPA',description:'Create stunning user experiences for our SaaS products.',qualifications:'Portfolio required, 2+ years exp',responsibilities:'Wireframing, prototyping, user research',postedBy:'employer@demo.com',applications:[],createdAt:new Date().toISOString()},
+      {id:3,title:'Backend Engineer',company:'DataFlow',location:'Hyderabad',type:'Full-time',salary:'₹10-18 LPA',description:'Build scalable APIs and microservices.',qualifications:'Node.js/Python, SQL/NoSQL',responsibilities:'API development, database design, code review',postedBy:'employer@demo.com',applications:[],createdAt:new Date().toISOString()},
+    ];
+    localStorage.setItem('tb_jobs',JSON.stringify(jobs));
+  }
+
+  function switchTab(tab){
+    document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===(tab==='login'?0:1)));
+    document.getElementById('login-form').classList.toggle('active',tab==='login');
+    document.getElementById('register-form').classList.toggle('active',tab==='register');
+  }
+  function msg(id,text,type){ const el=document.getElementById(id); el.textContent=text; el.className='msg '+type; }
+
+  function doLogin(){
+    const email=document.getElementById('login-email').value.trim();
+    const pass=document.getElementById('login-pass').value;
+    const users=JSON.parse(localStorage.getItem('tb_users')||'[]');
+    const user=users.find(u=>u.email===email&&u.password===pass);
+    if(!user){ msg('login-msg','Invalid email or password','error'); return; }
+    localStorage.setItem('tb_current',JSON.stringify(user));
+    msg('login-msg','Welcome back! Redirecting...','success');
+    setTimeout(()=>{ window.location.href=user.role==='employer'?'pages/employer-dashboard.html':'pages/seeker-dashboard.html'; },800);
+  }
+
+  function doRegister(){
+    const name=document.getElementById('reg-name').value.trim();
+    const email=document.getElementById('reg-email').value.trim();
+    const pass=document.getElementById('reg-pass').value;
+    const role=document.querySelector('input[name=role]:checked').value;
+    if(!name||!email||!pass){ msg('reg-msg','Please fill all fields','error'); return; }
+    if(pass.length<6){ msg('reg-msg','Password must be at least 6 characters','error'); return; }
+    const users=JSON.parse(localStorage.getItem('tb_users')||'[]');
+    if(users.find(u=>u.email===email)){ msg('reg-msg','Email already registered','error'); return; }
+    const newUser={name,email,password:pass,role,resume:'',phone:'',location:'',skills:'',bio:'',company:'',companyDesc:'',website:''};
+    users.push(newUser);
+    localStorage.setItem('tb_users',JSON.stringify(users));
+    localStorage.setItem('tb_current',JSON.stringify(newUser));
+    msg('reg-msg','Account created! Redirecting...','success');
+    setTimeout(()=>{ window.location.href=role==='employer'?'pages/employer-dashboard.html':'pages/seeker-dashboard.html'; },800);
+  }
+</script>
+</body>
+</html>

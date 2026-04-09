@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalentBridge – Applications</title>
+<link rel="stylesheet" href="../css/shared.css">
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar-logo"><h2>Talent<span>Bridge</span></h2><p>Employer Portal</p></div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sb-avatar">E</div>
+      <div class="user-info"><p id="sb-name">Employer</p><span id="sb-role">Employer</span></div>
+    </div>
+    <div class="sidebar-nav">
+      <a class="nav-item" href="employer-dashboard.html"><span class="icon">🏠</span> Dashboard</a>
+      <a class="nav-item" href="manage-jobs.html"><span class="icon">💼</span> Manage Jobs</a>
+      <a class="nav-item active" href="view-applications.html"><span class="icon">👥</span> Applications</a>
+      <a class="nav-item" href="employer-profile.html"><span class="icon">🏢</span> Company Profile</a>
+    </div>
+    <div class="sidebar-footer"><button class="logout-btn" onclick="logout()">🚪 Sign Out</button></div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Manage Applications</h1>
+      <div style="display:flex;gap:10px;align-items:center">
+        <select id="job-filter" onchange="render()" style="padding:9px 14px;border:2px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;outline:none;font-size:0.9rem">
+          <option value="">All Jobs</option>
+        </select>
+        <select id="status-filter" onchange="render()" style="padding:9px 14px;border:2px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;outline:none;font-size:0.9rem">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="accepted">Accepted</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+    </div>
+    <div class="content">
+      <div id="apps-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APPLICANT DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <h2 id="d-title">Applicant Details</h2>
+      <button class="modal-close" onclick="closeModal('detail-modal')">✕</button>
+    </div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="global-toast"></div>
+<script src="../js/app.js"></script>
+<script>
+  const user = requireAuth('employer');
+  renderSidebarUser();
+
+  // Populate job filter
+  const myJobs = getJobs().filter(j=>j.postedBy===user.email);
+  const jf = document.getElementById('job-filter');
+  myJobs.forEach(j=>{ const o=document.createElement('option'); o.value=j.id; o.textContent=j.title; jf.appendChild(o); });
+
+  function render(){
+    const jFilter = document.getElementById('job-filter').value;
+    const sFilter = document.getElementById('status-filter').value;
+    const jobs = getJobs().filter(j=>j.postedBy===user.email && (!jFilter||j.id==jFilter));
+    const allApps = [];
+    jobs.forEach(job=>{
+      job.applications.filter(a=>!sFilter||a.status===sFilter).forEach(app=>{
+        allApps.push({job,app});
+      });
+    });
+    const cont = document.getElementById('apps-list');
+    if(!allApps.length){ cont.innerHTML='<div class="empty"><div class="icon">👥</div><p>No applications found</p></div>'; return; }
+    cont.innerHTML = allApps.map(({job,app})=>`
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#e8a045,#f5c07a);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);font-size:1.2rem;flex-shrink:0">
+            ${app.name.charAt(0).toUpperCase()}
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:1rem;color:var(--navy)">${app.name}</div>
+            <div style="font-size:0.85rem;color:var(--muted)">${app.email} • Applied to: <strong>${job.title}</strong></div>
+            <div style="font-size:0.82rem;color:var(--muted);margin-top:2px">Applied: ${fmtDate(app.appliedAt)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <span class="badge badge-${app.status}">${app.status.charAt(0).toUpperCase()+app.status.slice(1)}</span>
+            <button class="btn btn-outline btn-sm" onclick='showDetail(${JSON.stringify(job).replace(/'/g,"&apos;")},${JSON.stringify(app).replace(/'/g,"&apos;")})'>View</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function showDetail(job, app){
+    document.getElementById('d-title').textContent = app.name;
+    const users = getUsers();
+    const seekerUser = users.find(u=>u.email===app.email)||{};
+    document.getElementById('detail-body').innerHTML = `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+        <span class="tag tag-type">Applied: ${job.title}</span>
+        <span class="badge badge-${app.status}">${app.status.charAt(0).toUpperCase()+app.status.slice(1)}</span>
+      </div>
+      ${seekerUser.skills ? `<div class="form-group"><label>Skills</label><div style="display:flex;flex-wrap:wrap;gap:6px">${seekerUser.skills.split(',').map(s=>`<span class="tag tag-type">${s.trim()}</span>`).join('')}</div></div>` : ''}
+      ${seekerUser.location ? `<div class="form-group"><label>Location</label><p>${seekerUser.location}</p></div>` : ''}
+      ${seekerUser.bio ? `<div class="form-group"><label>Bio</label><p style="line-height:1.7">${seekerUser.bio}</p></div>` : ''}
+      <div class="form-group"><label>Cover Letter</label>
+        <div style="background:#f8fafc;border-radius:10px;padding:14px;font-size:0.9rem;line-height:1.6">${app.coverLetter}</div>
+      </div>
+      ${app.resume ? `<div class="form-group"><label>Resume / Portfolio</label><a href="${app.resume}" target="_blank" style="color:var(--gold)">${app.resume}</a></div>` : ''}
+      <hr style="margin:20px 0;border-color:var(--border)">
+      <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:10px">Update Status</label>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-sm" style="background:#eefaf3;color:var(--success);border:1px solid #b7e8cc" onclick="updateStatus('${job.id}','${app.email}','accepted')">✓ Accept</button>
+        <button class="btn btn-sm" style="background:#fef0ee;color:var(--error);border:1px solid #fdd" onclick="updateStatus('${job.id}','${app.email}','rejected')">✕ Reject</button>
+        <button class="btn btn-sm btn-outline" onclick="updateStatus('${job.id}','${app.email}','pending')">⏳ Mark Pending</button>
+      </div>
+    `;
+    openModal('detail-modal');
+  }
+
+  function updateStatus(jobId, applicantEmail, status){
+    const jobs=getJobs();
+    const job=jobs.find(j=>j.id==jobId);
+    if(!job) return;
+    const app=job.applications.find(a=>a.email===applicantEmail);
+    if(app) app.status=status;
+    saveJobs(jobs);
+    closeModal('detail-modal');
+    showToast('Status updated to: '+status);
+    render();
+  }
+
+  render();
+</script>
+</body>
+</html>
