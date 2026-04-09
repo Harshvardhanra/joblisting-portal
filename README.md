@@ -16,8 +16,3 @@ Icons: Lucide React
 Landing & LoginJob 
 Seeker Dashboard
 Employer Portal
-🚀 Getting Started
-Clone the repository:Bashgit clone https://github.com/your-username/talentbridge.git
-Navigate to the project directory:Bashcd talentbridge
-Install dependencies:Bashnpm install
-Launch the application:Bashnpm start
